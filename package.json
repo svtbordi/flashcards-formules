@@ -1,0 +1,15 @@
+{
+  "name": "flashcards-formules",
+  "private": true,
+  "description": "Flashcards des théorèmes, définitions et formules de mathématiques du programme BCPST, en répétition espacée (FSRS).",
+  "scripts": {
+    "data": "python3 tools/build_data.py source/fiches_maths.xlsx www/data",
+    "serve": "python3 -m http.server 8765 --directory www",
+    "test": "node tools/smoke.mjs /tmp"
+  },
+  "devDependencies": {
+    "katex": "0.16.22",
+    "playwright": "1.56.1",
+    "ts-fsrs": "5.4.2"
+  }
+}

@@ -1,0 +1,192 @@
+[
+{
+"code": "O1",
+"group": "BCPST1",
+"title": "Outils 1 – Logique, ensembles"
+},
+{
+"code": "O2",
+"group": "BCPST1",
+"title": "Outils 2 – Nombres réels"
+},
+{
+"code": "O3",
+"group": "BCPST1",
+"title": "Outils 3 – Trigonométrie"
+},
+{
+"code": "O4",
+"group": "BCPST1",
+"title": "Outils 4 – Nombres complexes"
+},
+{
+"code": "O5",
+"group": "BCPST1",
+"title": "Outils 5 – Méthodes de calcul"
+},
+{
+"code": "O6",
+"group": "BCPST1",
+"title": "Outils 6 – Vocabulaire des applications"
+},
+{
+"code": "O7",
+"group": "BCPST1",
+"title": "Outils 7 – Dénombrement"
+},
+{
+"code": "A1",
+"group": "BCPST1",
+"title": "Analyse 1 – Suites réelles usuelles"
+},
+{
+"code": "A2",
+"group": "BCPST1",
+"title": "Analyse 2 – Fonctions réelles usuelles"
+},
+{
+"code": "A4",
+"group": "BCPST1",
+"title": "Analyse 4 – Équations différentielles linéaires"
+},
+{
+"code": "AL1",
+"group": "BCPST1",
+"title": "Algèbre linéaire 1 – Systèmes linéaires"
+},
+{
+"code": "AL2",
+"group": "BCPST1",
+"title": "Algèbre linéaire 2 – Matrices"
+},
+{
+"code": "G1",
+"group": "BCPST1",
+"title": "Géométrie 1"
+},
+{
+"code": "POL1",
+"group": "BCPST1",
+"title": "Algèbre – Polynômes réels"
+},
+{
+"code": "A5",
+"group": "BCPST1",
+"title": "Analyse 5 – Suites réelles"
+},
+{
+"code": "A6",
+"group": "BCPST1",
+"title": "Analyse 6 – Limites, continuité"
+},
+{
+"code": "A7",
+"group": "BCPST1",
+"title": "Analyse 7 – Dérivation"
+},
+{
+"code": "A8",
+"group": "BCPST1",
+"title": "Analyse 8 – Intégration sur un segment"
+},
+{
+"code": "A9",
+"group": "BCPST1",
+"title": "Analyse 9 – Développements limités"
+},
+{
+"code": "A10",
+"group": "BCPST1",
+"title": "Analyse 10 – Fonctions de deux variables"
+},
+{
+"code": "PR1",
+"group": "BCPST1",
+"title": "Probabilités 1 – Concepts de base"
+},
+{
+"code": "PR2",
+"group": "BCPST1",
+"title": "Probabilités 2 – Variables sur un univers fini"
+},
+{
+"code": "B_AN1",
+"group": "BCPST2",
+"title": "Analyse 1 – Séries réelles"
+},
+{
+"code": "B_AN2",
+"group": "BCPST2",
+"title": "Analyse 2 – Intégrales généralisées"
+},
+{
+"code": "B_POL",
+"group": "BCPST2",
+"title": "Algèbre – Polynômes"
+},
+{
+"code": "B_AL1",
+"group": "BCPST2",
+"title": "Algèbre linéaire 1 – Espaces vectoriels"
+},
+{
+"code": "B_AL2",
+"group": "BCPST2",
+"title": "Algèbre linéaire 2 – Applications linéaires et matrices"
+},
+{
+"code": "B_AL3",
+"group": "BCPST2",
+"title": "Algèbre linéaire 3 – Valeurs propres"
+},
+{
+"code": "B_GEO",
+"group": "BCPST2",
+"title": "Géométrie – Produit scalaire dans Rⁿ"
+},
+{
+"code": "B_PR1",
+"group": "BCPST2",
+"title": "Probabilités 1 – Concepts de base"
+},
+{
+"code": "B_PR2",
+"group": "BCPST2",
+"title": "Probabilités 2 – Variables discrètes"
+},
+{
+"code": "B_PR3",
+"group": "BCPST2",
+"title": "Probabilités 3 – Couples discrets"
+},
+{
+"code": "B_PR4",
+"group": "BCPST2",
+"title": "Probabilités 4 – Variables à densité"
+},
+{
+"code": "B_PR5",
+"group": "BCPST2",
+"title": "Probabilités 5 – Théorèmes limites"
+},
+{
+"code": "HP",
+"group": "Autres",
+"title": "Hors des chapitres du programme"
+},
+{
+"code": "F-TRIG",
+"group": "Formulaire",
+"title": "Trigonométrie"
+},
+{
+"code": "F-PRIM",
+"group": "Formulaire",
+"title": "Primitives usuelles"
+},
+{
+"code": "F-DL",
+"group": "Formulaire",
+"title": "Développements limités usuels en 0"
+}
+]
