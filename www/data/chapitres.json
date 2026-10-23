@@ -65,6 +65,11 @@
 "title": "Géométrie 1"
 },
 {
+"code": "S1",
+"group": "BCPST1",
+"title": "Statistique 1"
+},
+{
 "code": "POL1",
 "group": "BCPST1",
 "title": "Algèbre – Polynômes réels"
