@@ -41,8 +41,10 @@ const SHELL = [
   "vendor/katex/fonts/KaTeX_Typewriter-Regular.woff2"
  ];
 
+// cache: 'reload' contourne le cache HTTP du navigateur (10 min sur GitHub Pages) : sans cela, une nouvelle version
+// pouvait mettre en cache l'ancien app.js.
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
