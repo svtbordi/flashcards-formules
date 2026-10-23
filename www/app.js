@@ -256,8 +256,14 @@ function buildSession(selected, { ahead = false, label = '', reviews = false } =
     else notDue.push({ c, r: retrievability(st, now) });
   }
   due.sort((a, b) => a.r - b.r);
+  // Formulaire seul : entraînement à volonté, sans limite de nouvelles cartes ni attente du calendrier
+  const free = !reviews && pool.length > 0 && pool.every(c => c.deck === 'formulaire');
   let queue;
-  if (ahead) {
+  if (free) {
+    fresh.sort((a, b) => cardOrderKey(a) - cardOrderKey(b));
+    notDue.sort((a, b) => a.r - b.r);
+    queue = due.map(x => x.c).concat(fresh, notDue.map(x => x.c));
+  } else if (ahead) {
     notDue.sort((a, b) => a.r - b.r);
     queue = notDue.slice(0, store.settings.dailyGoal).map(x => x.c);
   } else {
@@ -266,7 +272,7 @@ function buildSession(selected, { ahead = false, label = '', reviews = false } =
     queue = due.map(x => x.c).concat(fresh.slice(0, newLeft));
   }
   return {
-    selected, label, ahead, reviews,
+    selected, label, ahead, reviews, free,
     pool, queue,
     relearn: [], // cartes ratées, à revoir dans la séance
     done: 0, again: 0,
@@ -301,7 +307,7 @@ function answer(rating) {
   store.cards[c.id] = fromCard(next);
   const d = today();
   d.reviews += 1;
-  if (wasNew) d.newCards += 1;
+  if (wasNew && !s.free) d.newCards += 1; // le formulaire libre n'entame pas le quota de nouvelles fiches
   if (rating === Rating.Again) {
     d.again += 1;
     s.again += 1;
@@ -448,7 +454,7 @@ function renderHome() {
     <p class="muted small">N’importe quel chapitre, par exemple avant une colle ou un DS. Les cartes commencées ici entrent ensuite dans vos révisions espacées.</p>
     <div class="actions">
       <button id="go-choose">Choisir un ou plusieurs chapitres</button>
-      ${nForm ? `<button id="go-form">Formulaire <small>${plural(nForm, 'égalité', 'égalités')} : trigonométrie, primitives, développements limités</small></button>` : ''}
+      ${nForm ? `<button id="go-form">Formulaire <small>${plural(nForm, 'égalité', 'égalités')} : trigonométrie, primitives, développements limités · à volonté, sans limite</small></button>` : ''}
       ${store.selection.length ? `<button id="go-last">Reprendre ma dernière sélection <small>(${esc(selectionLabel(store.selection).slice(0, 60))})</small></button>` : ''}
       <button id="go-started" ${startedStats ? '' : 'disabled'}>Mes chapitres commencés${startedStats ? ` <small>(${startedStats.due} à revoir)</small>` : ''}</button>
     </div>
@@ -643,7 +649,7 @@ function qcmChoose(k) {
   else {
     Q.failed.push(q.card);
     const card = stateOf(q.card.id) || createEmptyCard(now);
-    if (card.state === State.New) today().newCards += 1;
+    if (card.state === State.New && !session.free) today().newCards += 1;
     store.cards[q.card.id] = fromCard(scheduler.next(card, now, Rating.Again).card);
   }
   persist();
@@ -796,10 +802,13 @@ function renderSession() {
       ${!s.done && !s.ahead ? `<p class="muted">Toutes les cartes de cette sélection sont à jour${s.poolStats.fresh ? ' et la limite de nouvelles cartes du jour est atteinte' : ''}.</p>` : ''}
     </section>
     <div class="actions">
-      ${s.poolStats.notDue ? '<button id="ahead">Réviser en avance (les cartes les moins sûres)</button>' : ''}
+      ${s.free ? '<button id="again-free">Recommencer un tour</button>' : ''}
+      ${s.poolStats.notDue && !s.free ? '<button id="ahead">Réviser en avance (les cartes les moins sûres)</button>' : ''}
       <button class="primary" id="home">Retour à l’accueil</button>
     </div>
-    ${s.poolStats.notDue ? '<p class="muted small">Réviser en avance ne fausse pas le calendrier : une carte revue trop tôt est simplement moins repoussée.</p>' : ''}`;
+    ${s.poolStats.notDue && !s.free ? '<p class="muted small">Réviser en avance ne fausse pas le calendrier : une carte revue trop tôt est simplement moins repoussée.</p>' : ''}`;
+    const af = document.getElementById('again-free');
+    if (af) af.onclick = () => startSession(s.selected, s.label);
     const a = document.getElementById('ahead');
     if (a) a.onclick = () => startSession(s.selected, s.label, { ahead: true, reviews: s.reviews });
     document.getElementById('home').onclick = () => { session = null; viewStack = []; go('home', false); };
