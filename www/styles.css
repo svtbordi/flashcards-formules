@@ -264,3 +264,9 @@ button.term-link small { display: block; }
 .results { border-left-color: var(--accent); }
 .hard button.term-link { display: inline; width: auto; padding: 0; min-height: 0; }
 .chap.group .subs { margin-top: 6px; }
+/* Recto en question : rappel des objets utilisés, puis la consigne */
+.ctx { margin: 14px 0 0; color: var(--muted); font-size: 16px; line-height: 1.7; }
+.flash .term { font-size: 20px; margin: 10px 0 16px; }
+.formula .term { font-size: 20px; }
+.def-box p.term { font-weight: 600; font-size: 17px; margin: 4px 0 12px; }
+.def-box .ctx { margin-top: 0; }

@@ -57,6 +57,14 @@ def statut(d):
     return None if st in (None, 'R') else st
 
 
+def question(card, d):
+    # recto affiché : rappel des objets utilisés (contexte) puis la consigne ; sans consigne, l'intitulé sert de question
+    if d.get('Contexte (rappel en tête de carte)'):
+        card['ctx'] = d['Contexte (rappel en tête de carte)']
+    if d.get('Question (recto)'):
+        card['q'] = d['Question (recto)']
+
+
 wb = openpyxl.load_workbook(XLSX, read_only=True)
 cards, erreurs, ids = [], [], set()
 form = list(rows(wb['Formulaire']))
@@ -72,7 +80,8 @@ for d in rows(wb['Fiches']):
     if not chap:
         erreurs.append(f"{d['ID']} : partie inconnue « {d['Partie du programme']} »")
         continue
-    card = {'id': d['ID'], 'deck': 'fiches', 'chap': chap, 'recto': d['Intitulé (recto)'], 'verso': d['Contenu (verso)']}
+    card = {'id': d['ID'], 'deck': 'fiches', 'chap': chap, 'recto': d['Intitulé'], 'verso': d['Réponse (verso)']}
+    question(card, d)
     if d.get('Type'):
         card['type'] = d['Type']
     if st == 'O':
@@ -88,6 +97,7 @@ for d in form:
         erreurs.append(f"{d['ID']} : rubrique inconnue « {d['Rubrique']} »")
         continue
     card = {'id': d['ID'], 'deck': 'formulaire', 'chap': chap, 'recto': d['Recto'], 'verso': d['Verso']}
+    question(card, d)
     if d.get("Fiche d'origine"):  # famille de formules : leurres du QCM pris d'abord dans la même famille
         card['fam'] = d["Fiche d'origine"]
     if st == 'O':
@@ -98,8 +108,8 @@ for c in cards:
     if c['id'] in ids:
         erreurs.append(f"{c['id']} : ID en double")
     ids.add(c['id'])
-    for k in ('recto', 'verso'):
-        if not c[k] or c[k].count('$') % 2:
+    for k in ('recto', 'verso', 'ctx', 'q'):
+        if k in ('recto', 'verso') and not c[k] or c.get(k, '').count('$') % 2:
             erreurs.append(f"{c['id']} : {k} vide ou nombre de $ impair")
 if erreurs:
     sys.exit('Tableur refusé :\n' + '\n'.join(erreurs))

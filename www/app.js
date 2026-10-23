@@ -709,8 +709,8 @@ function renderQcm(s) {
     <article class="flash qcm ${form ? 'formula' : ''}">
       ${answered && canReport() ? reportButton() : ''}
       ${cardTags(c, stateOf(c.id))}
-      <h2 class="term">${tex(c.recto)}${form ? ' <span class="eq">=</span>' : ''}</h2>
-      <p class="hint muted">${form ? 'Quelle expression complète l’égalité ?' : 'Quel est le bon énoncé ?'}</p>
+      ${frontHtml(c)}
+      <p class="hint muted">Choisissez la bonne réponse.</p>
     </article>
     <div class="options">${q.options.map((o, k) => {
       const cls = !answered ? '' : o.id === c.id ? 'right' : k === Q.chosen ? 'wrong' : 'dim';
@@ -764,6 +764,12 @@ function ratingButtons() {
     <button class="good" data-r="${Rating.Good}">Su<small>2</small></button></div>`;
 }
 
+// Recto d'une carte : rappel des objets utilisés (contexte), puis la consigne (« Définir… », « Citer le théorème… »).
+// Sans consigne dans le tableur, l'intitulé sert de question.
+function frontHtml(c, tag = 'h2') {
+  return `${c.ctx ? `<p class="ctx">${tex(c.ctx)}</p>` : ''}<${tag} class="term">${tex(c.q || c.recto)}</${tag}>`;
+}
+
 const ORANGE_NOTE = '<p class="orange-note">Place dans le programme à confirmer : signalez-le (⚠) si cette fiche vous semble hors programme.</p>';
 
 function cardTags(c, st) {
@@ -808,9 +814,9 @@ function renderSession() {
     <article class="flash ${s.revealed ? 'revealed' : ''} ${form ? 'formula' : ''}">
       ${s.revealed && canReport() ? reportButton() : ''}
       ${cardTags(c, st)}
-      <h2 class="term">${tex(c.recto)}${form ? ' <span class="eq">=</span>' : ''}</h2>
+      ${frontHtml(c)}
       ${s.revealed ? `<div class="def">${tex(c.verso)}</div>${c.orange ? ORANGE_NOTE : ''}`
-        : `<p class="hint muted">${form ? 'Complétez l’égalité de tête (ou à l’écrit), puis retournez la carte.' : 'Énoncez le résultat de tête (ou à l’écrit), avec ses hypothèses, puis retournez la carte.'}</p>`}
+        : '<p class="hint muted">Répondez de tête (ou à l’écrit), puis retournez la carte.</p>'}
     </article>
     ${s.revealed ? ratingButtons() : '<button class="primary reveal" id="reveal">Voir la réponse <small>Espace</small></button>'}
     ${s.undo ? '<button class="link undo" id="undo">Annuler la dernière réponse</button>' : ''}`;
@@ -947,7 +953,7 @@ function openReport(card, context, extra = {}) {
     store.pendingReports.push(Object.assign({
       terme: `[Maths] ${card.id} · ${plain(card.recto)}`,
       id: card.id,
-      definition: card.deck === 'formulaire' ? `${card.recto} = ${card.verso}` : card.verso,
+      definition: `${card.ctx ? card.ctx + ' ' : ''}${card.q || card.recto} → ${card.verso}`,
       codes: chapterTitle[card.chap] || card.chap,
       type: REPORT_TYPES[type()],
       precision: text.value.trim(),
@@ -1057,7 +1063,8 @@ function showCard(card) {
   box.className = 'modal';
   const form = card.deck === 'formulaire';
   box.innerHTML = `<div class="modal-box def-box" role="dialog" aria-modal="true" aria-labelledby="def-term">
-    <h2 id="def-term">${tex(card.recto)}${form ? ' =' : ''}</h2>
+    <h2 id="def-term">${tex(card.recto)}</h2>
+    ${frontHtml(card, 'p')}
     <div class="def">${tex(card.verso)}</div>
     ${card.orange ? ORANGE_NOTE : ''}
     <p class="muted small">${esc(GROUP_TITLE[chapterGroup[card.chap]] || '')} · ${esc(chapterTitle[card.chap] || '')}</p>
