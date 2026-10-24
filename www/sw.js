@@ -16,6 +16,8 @@ const SHELL = [
   "vendor/katex/katex.min.css",
   "data/cartes.json",
   "data/chapitres.json",
+  "data/physique/cartes.json",
+  "data/physique/chapitres.json",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/apple-touch-icon.png",

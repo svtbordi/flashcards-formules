@@ -1,0 +1,37 @@
+[
+{
+"code": "S1",
+"group": "BCPST1",
+"title": "S1 – Propagation d’un signal physique"
+},
+{
+"code": "F-FOR-S",
+"group": "Formulaire",
+"title": "Formules : ondes et signaux"
+},
+{
+"code": "F-USI",
+"group": "Formulaire",
+"title": "Unités du Système international"
+},
+{
+"code": "F-UUS",
+"group": "Formulaire",
+"title": "Unités usuelles et conversions"
+},
+{
+"code": "F-CST",
+"group": "Formulaire",
+"title": "Constantes"
+},
+{
+"code": "F-OGC",
+"group": "Formulaire",
+"title": "Ordres de grandeur à connaître"
+},
+{
+"code": "F-OGR",
+"group": "Formulaire",
+"title": "Ordres de grandeur à retrouver"
+}
+]

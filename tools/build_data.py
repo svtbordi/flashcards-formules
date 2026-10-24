@@ -1,6 +1,7 @@
 """Construit www/data/cartes.json et chapitres.json à partir du tableur source (onglets « Fiches » et « Formulaire »).
 
-Usage : python tools/build_data.py source/fiches_maths.xlsx www/data
+Usage : python tools/build_data.py source/fiches_maths.xlsx www/data [maths]
+        python tools/build_data.py source/fiches_physique.xlsx www/data/physique physique
 Les fiches rouges (hors programme) ou marquées « Supprimer » dans « Ta décision » sont écartées ;
 « Passer en noir / orange / rouge » remplace le statut proposé. L'ID porte la progression des élèves : ne jamais le changer.
 """
@@ -8,9 +9,10 @@ import datetime, json, re, sys
 import openpyxl
 
 XLSX, OUT = sys.argv[1], sys.argv[2]
+MATIERE = sys.argv[3] if len(sys.argv) > 3 else 'maths'
 
 # Parties du programme 2021 (ordre du programme), avec le libellé utilisé dans la colonne « Partie du programme »
-CHAPITRES = [
+CHAPITRES_MATHS = [
     ('O1', 'BCPST1', 'Outils 1 – Logique, ensembles'), ('O2', 'BCPST1', 'Outils 2 – Nombres réels'),
     ('O3', 'BCPST1', 'Outils 3 – Trigonométrie'), ('O4', 'BCPST1', 'Outils 4 – Nombres complexes'),
     ('O5', 'BCPST1', 'Outils 5 – Méthodes de calcul'), ('O6', 'BCPST1', 'Outils 6 – Vocabulaire des applications'),
@@ -34,6 +36,43 @@ CHAPITRES = [
     ('F-TRIG', 'Formulaire', 'Trigonométrie'), ('F-PRIM', 'Formulaire', 'Primitives usuelles'),
     ('F-DL', 'Formulaire', 'Développements limités usuels en 0'),
 ]
+# Physique-chimie : un chapitre par partie numérotée du programme ; C.1, C.2 et C.7 coupés selon leurs sous-parties
+CHAPITRES_PHYSIQUE = [
+    ('MI', 'BCPST1', 'MI – Mesures et incertitudes'),
+    ('E1', 'BCPST1', 'E1 – Descriptions microscopique et macroscopique d’un système'),
+    ('E2', 'BCPST1', 'E2 – Bilans d’énergie (premier principe)'),
+    ('S1', 'BCPST1', 'S1 – Propagation d’un signal physique'),
+    ('S2', 'BCPST1', 'S2 – Signaux électriques en régime stationnaire'),
+    ('C1a', 'BCPST1', 'C1a – Atomes'), ('C1b', 'BCPST1', 'C1b – Molécules et ions'),
+    ('C1c', 'BCPST1', 'C1c – Entités organiques et spectroscopies'),
+    ('C2a', 'BCPST1', 'C2a – Prévoir l’état final d’un système'), ('C2b', 'BCPST1', 'C2b – Acide-base'),
+    ('C2c', 'BCPST1', 'C2c – Oxydoréduction'),
+    ('M1', 'BCPST1', 'M1 – Cinématique du point'), ('M2', 'BCPST1', 'M2 – Lois de Newton'),
+    ('C3', 'BCPST1', 'C3 – Structure et propriétés de la matière'), ('C4', 'BCPST1', 'C4 – Cinétique chimique 1'),
+    ('C5', 'BCPST1', 'C5 – Chimie organique 1'), ('S3', 'BCPST1', 'S3 – Circuits du premier ordre'),
+    ('E3', 'BCPST1', 'E3 – Machines thermiques'), ('E4', 'BCPST1', 'E4 – Statique des fluides'),
+    ('T1', 'BCPST1', 'T1 – Diffusion de matière'),
+    ('E5', 'BCPST2', 'E5 – Second principe'), ('E6', 'BCPST2', 'E6 – Systèmes de composition variable'),
+    ('E7', 'BCPST2', 'E7 – Thermochimie'), ('E8', 'BCPST2', 'E8 – Binaires solide-liquide'),
+    ('C6', 'BCPST2', 'C6 – Cinétique chimique 2'), ('C7a', 'BCPST2', 'C7a – Oxydoréduction et diagrammes E-pH'),
+    ('C7b', 'BCPST2', 'C7b – Complexation'), ('C7c', 'BCPST2', 'C7c – Précipitation'),
+    ('C8', 'BCPST2', 'C8 – Chimie organique 2'), ('M3', 'BCPST2', 'M3 – Approche énergétique'),
+    ('M4', 'BCPST2', 'M4 – Oscillateurs mécaniques'), ('M5', 'BCPST2', 'M5 – Tension superficielle'),
+    ('M6', 'BCPST2', 'M6 – Fluides en écoulement'), ('S4', 'BCPST2', 'S4 – Filtrage linéaire'),
+    ('S5', 'BCPST2', 'S5 – Interaction lumière-matière'), ('T2', 'BCPST2', 'T2 – Conduction thermique'),
+    ('HP', 'Autres', 'Hors des chapitres du programme'),
+    ('F-FOR-E', 'Formulaire', 'Formules : énergie, thermodynamique'),
+    ('F-FOR-S', 'Formulaire', 'Formules : ondes et signaux'),
+    ('F-FOR-M', 'Formulaire', 'Formules : mécanique et fluides'),
+    ('F-FOR-C', 'Formulaire', 'Formules : chimie'),
+    ('F-FOR-T', 'Formulaire', 'Formules : transport'),
+    ('F-USI', 'Formulaire', 'Unités du Système international'),
+    ('F-UUS', 'Formulaire', 'Unités usuelles et conversions'),
+    ('F-CST', 'Formulaire', 'Constantes'),
+    ('F-OGC', 'Formulaire', 'Ordres de grandeur à connaître'),
+    ('F-OGR', 'Formulaire', 'Ordres de grandeur à retrouver'),
+]
+CHAPITRES, LIBELLE = {'maths': (CHAPITRES_MATHS, 'Mathématiques'), 'physique': (CHAPITRES_PHYSIQUE, 'Physique-chimie')}[MATIERE]
 PAR_LIBELLE = {f'{y} · {t}': c for c, y, t in CHAPITRES if y.startswith('BCPST')}
 PAR_LIBELLE['Hors des chapitres du programme'] = 'HP'
 PAR_RUBRIQUE = {t: c for c, y, t in CHAPITRES if y == 'Formulaire'}
@@ -117,7 +156,7 @@ if erreurs:
 order = {c: i for i, (c, _, _) in enumerate(CHAPITRES)}
 cards.sort(key=lambda c: (order[c['chap']], c['id']))
 stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M')
-json.dump({'version': stamp, 'matiere': 'Mathématiques', 'cards': cards},
+json.dump({'version': stamp, 'matiere': LIBELLE, 'cards': cards},
           open(f'{OUT}/cartes.json', 'w', encoding='utf8'), ensure_ascii=False)
 used = {c['chap'] for c in cards}
 json.dump([{'code': c, 'group': y, 'title': t} for c, y, t in CHAPITRES if c in used],

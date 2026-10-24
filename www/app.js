@@ -5,9 +5,31 @@
 
 const { fsrs, generatorParameters, createEmptyCard, Rating, State } = window.FSRS;
 
-// Clés propres à cette application : les applications publiées sur svtbordi.github.io partagent le même stockage
-const STORE_KEY = 'fc-formules-maths-v1';
-const DECK_KEY = 'fc-formules-maths-deck-v1';
+// Une matière par jeu de cartes, chacune avec sa propre progression. Les clés sont propres à cette application :
+// les applications publiées sur svtbordi.github.io partagent le même stockage.
+const MATIERES = {
+  maths: {
+    nom: 'Mathématiques', court: 'Maths', data: 'data/', store: 'fc-formules-maths-v1', deck: 'fc-formules-maths-deck-v1',
+    formTitre: 'Formulaire (une égalité par carte)', formUnite: ['égalité', 'égalités'], formDesc: 'trigonométrie, primitives, développements limités',
+    exemples: 'Bayes, rang, primitive…', raccourcis: [],
+  },
+  physique: {
+    nom: 'Physique-chimie', court: 'Physique', data: 'data/physique/', store: 'fc-formules-physique-v1', deck: 'fc-formules-physique-deck-v1',
+    formTitre: 'Formulaire', formUnite: ['carte', 'cartes'], formDesc: 'formules, unités, constantes, ordres de grandeur',
+    exemples: 'Snell-Descartes, photon, indice…',
+    raccourcis: [{ id: 'go-og', label: 'Ordres de grandeur', desc: 'à connaître et à retrouver · à volonté, sans limite', sel: ['F-OGC', 'F-OGR'] }],
+  },
+};
+const MATIERE_KEY = 'fc-formules-matiere-v1';
+let matiere = null;
+try {
+  matiere = localStorage.getItem(MATIERE_KEY);
+  // élèves qui utilisaient l'application avant l'arrivée de la physique : ils restent en mathématiques
+  if (!MATIERES[matiere] && localStorage.getItem(MATIERES.maths.store)) localStorage.setItem(MATIERE_KEY, matiere = 'maths');
+} catch (e) { /* stockage bloqué */ }
+const M = MATIERES[matiere] || MATIERES.maths;
+const STORE_KEY = M.store;
+const DECK_KEY = M.deck;
 const DAY_START_HOUR = 4; // une « journée » de révision commence à 4 h, comme dans Anki
 const MASTERED_DAYS = 21; // carte considérée comme acquise au-delà de 21 jours de stabilité
 const APP_NAME = 'Formules BCPST';
@@ -130,7 +152,7 @@ const chapterTitle = {};
 const chapterGroup = {};
 const chapterOrder = {};
 const GROUPS = ['BCPST1', 'BCPST2', 'Autres', 'Formulaire'];
-const GROUP_TITLE = { BCPST1: 'BCPST 1', BCPST2: 'BCPST 2', Autres: 'Hors des chapitres du programme', Formulaire: 'Formulaire (une égalité par carte)' };
+const GROUP_TITLE = { BCPST1: 'BCPST 1', BCPST2: 'BCPST 2', Autres: 'Hors des chapitres du programme', Formulaire: M.formTitre };
 
 function normText(s) {
   return String(s).trim().toLowerCase()
@@ -154,8 +176,8 @@ const cardOrderKey = c => (chapterOrder[c.chap] ?? 9999) * 1e4 + deck.index.get(
 
 async function loadDeck() {
   const [bundled, chaps, conf] = await Promise.all([
-    fetch('data/cartes.json').then(r => r.json()),
-    fetch('data/chapitres.json').then(r => r.json()),
+    fetch(M.data + 'cartes.json').then(r => r.json()),
+    fetch(M.data + 'chapitres.json').then(r => r.json()),
     fetch('config.json', { cache: 'no-cache' }).then(r => r.json()).catch(() => ({})),
   ]);
   config = conf || {};
@@ -413,12 +435,14 @@ function bar(s) {
 }
 
 function render() {
-  backBtn.hidden = view === 'home';
+  const firstLaunch = !MATIERES[matiere]; // choix de la matière avant tout chargement de cartes
+  backBtn.hidden = view === 'home' || firstLaunch;
+  document.getElementById('btn-settings').hidden = firstLaunch;
   // pas de recherche pendant une séance : chercher la réponse avant de la donner annule l'effet du test
-  document.getElementById('btn-search').hidden = view === 'session' || view === 'search';
-  const titles = { home: APP_NAME, choose: 'Choisir des chapitres', vus: 'Mes chapitres vus en cours', session: 'Entraînement', progress: 'Ma progression', settings: 'Réglages', privacy: 'Données et confidentialité', install: 'Installer l’application', search: 'Rechercher une fiche' };
+  document.getElementById('btn-search').hidden = view === 'session' || view === 'search' || firstLaunch;
+  const titles = { home: `${APP_NAME} · ${M.court}`, matiere: APP_NAME, choose: 'Choisir des chapitres', vus: 'Mes chapitres vus en cours', session: 'Entraînement', progress: 'Ma progression', settings: 'Réglages', privacy: 'Données et confidentialité', install: 'Installer l’application', search: 'Rechercher une fiche' };
   titleEl.textContent = titles[view] || APP_NAME;
-  ({ home: renderHome, choose: renderChoose, vus: renderVus, session: renderSession, progress: renderProgress, settings: renderSettings, privacy: renderPrivacy, install: renderInstall, search: renderSearch })[view]();
+  ({ home: renderHome, matiere: renderMatiere, choose: renderChoose, vus: renderVus, session: renderSession, progress: renderProgress, settings: renderSettings, privacy: renderPrivacy, install: renderInstall, search: renderSearch })[view]();
 }
 
 const formCards = () => deck.cards.filter(c => c.deck === 'formulaire');
@@ -456,11 +480,13 @@ function renderHome() {
     <p class="muted small">N’importe quel chapitre, par exemple avant une colle ou un DS. Les cartes commencées ici entrent ensuite dans vos révisions espacées.</p>
     <div class="actions">
       <button id="go-choose">Choisir un ou plusieurs chapitres</button>
-      ${nForm ? `<button id="go-form">Formulaire <small>${plural(nForm, 'égalité', 'égalités')} : trigonométrie, primitives, développements limités · à volonté, sans limite</small></button>` : ''}
+      ${nForm ? `<button id="go-form">Formulaire <small>${plural(nForm, ...M.formUnite)} : ${M.formDesc} · à volonté, sans limite</small></button>` : ''}
+      ${raccourcis().map(r => `<button id="${r.id}">${esc(r.label)} <small>${plural(r.n, 'carte', 'cartes')} : ${esc(r.desc)}</small></button>`).join('')}
       ${store.selection.length ? `<button id="go-last">Reprendre ma dernière sélection <small>(${esc(selectionLabel(store.selection).slice(0, 60))})</small></button>` : ''}
       <button id="go-started" ${startedStats ? '' : 'disabled'}>Mes chapitres commencés${startedStats ? ` <small>(${startedStats.due} à revoir)</small>` : ''}</button>
     </div>
     <div class="actions secondary">
+      <button id="go-matiere">Matière : ${esc(M.nom)} <small>changer de matière</small></button>
       <button id="go-progress">Ma progression</button>
       <button id="go-search">Rechercher une fiche</button>
       <button id="go-install">Installer l’application et les rappels</button>
@@ -473,6 +499,8 @@ function renderHome() {
   document.getElementById('go-choose').onclick = () => go('choose');
   const form = document.getElementById('go-form');
   if (form) form.onclick = () => startSession(['@Formulaire'], 'Formulaire');
+  for (const r of raccourcis()) document.getElementById(r.id).onclick = () => startSession(r.sel, r.label);
+  document.getElementById('go-matiere').onclick = () => go('matiere');
   const last = document.getElementById('go-last');
   if (last) last.onclick = () => startSession(store.selection, 'Dernière sélection');
   document.getElementById('go-progress').onclick = () => go('progress');
@@ -480,6 +508,30 @@ function renderHome() {
   document.getElementById('go-install').onclick = () => go('install');
   const suggest = document.getElementById('go-suggest');
   if (suggest) suggest.onclick = openSuggestion;
+}
+
+// Raccourcis d'entraînement propres à la matière (ordres de grandeur en physique-chimie), s'ils ont des cartes
+function raccourcis() {
+  return M.raccourcis.map(r => Object.assign({ n: deck.cards.filter(c => matchesSelection(c, r.sel)).length }, r)).filter(r => r.n);
+}
+
+// Choix de la matière : au premier lancement, puis depuis l'accueil. Chaque matière garde sa propre progression ;
+// changer de matière recharge l'application sur le jeu de cartes choisi.
+function renderMatiere() {
+  const first = !MATIERES[matiere];
+  app.innerHTML = `
+    <section class="card hero">
+      <p class="big">${first ? 'Bienvenue' : 'Changer de matière'}</p>
+      <p>${first ? 'Choisissez la matière à réviser. Vous pourrez en changer à tout moment depuis l’accueil.' : 'Votre progression est conservée séparément dans chaque matière.'}</p>
+    </section>
+    <div class="actions">${Object.entries(MATIERES).map(([k, m]) => `<button class="${k === matiere ? 'primary' : ''}" data-matiere="${k}">${esc(m.nom)}${k === matiere ? ' <small>matière actuelle</small>' : ''}</button>`).join('')}</div>`;
+  app.querySelectorAll('[data-matiere]').forEach(b => {
+    b.onclick = () => {
+      if (b.dataset.matiere === matiere) return back();
+      try { localStorage.setItem(MATIERE_KEY, b.dataset.matiere); } catch (e) { return toast('Impossible d’enregistrer : stockage bloqué.'); }
+      location.reload();
+    };
+  });
 }
 
 // Liste de chapitres à cocher, groupés (BCPST 1, BCPST 2, autres, formulaire) ; un groupe se coche en entier.
@@ -960,16 +1012,17 @@ function openReport(card, context, extra = {}) {
     e.preventDefault();
     if (send.disabled) return;
     // mêmes champs que l'application de SVT : le script de l'enseignant range la ligne sans modification ;
-    // le préfixe [Maths] et l'ID distinguent ces signalements dans l'onglet « Signalements »
+    // le préfixe de la matière ([Maths], [Physique]) et l'ID distinguent ces signalements dans l'onglet « Signalements »
+    const mat = M.court.toLowerCase();
     store.pendingReports.push(Object.assign({
-      terme: `[Maths] ${card.id} · ${plain(card.recto)}`,
+      terme: `[${M.court}] ${card.id} · ${plain(card.recto)}`,
       id: card.id,
       definition: `${card.ctx ? card.ctx + ' ' : ''}${card.q || card.recto} → ${card.verso}`,
       codes: chapterTitle[card.chap] || card.chap,
       type: REPORT_TYPES[type()],
       precision: text.value.trim(),
-      contexte: { flashcard: 'maths : fiche', formulaire: 'maths : formulaire', recherche: 'maths : recherche', qcm: 'maths : QCM' }[context] || context,
-      version: 'maths ' + deck.version,
+      contexte: `${mat} : ${{ flashcard: 'fiche', formulaire: 'formulaire', recherche: 'recherche', qcm: 'QCM' }[context] || context}`,
+      version: mat + ' ' + deck.version,
       date: new Date().toISOString(),
     }, extra));
     persist();
@@ -1012,9 +1065,9 @@ function openSuggestion() {
     if (send.disabled) return;
     store.pendingReports.push({
       nature: 'suggestion',
-      type: '[Maths] ' + SUGGESTION_TYPES[type()],
+      type: `[${M.court}] ` + SUGGESTION_TYPES[type()],
       message: text.value.trim(),
-      version: 'maths ' + deck.version,
+      version: M.court.toLowerCase() + ' ' + deck.version,
       date: new Date().toISOString(),
     });
     persist();
@@ -1095,7 +1148,7 @@ function showCard(card) {
 function renderSearch() {
   const results = searchCards(searchQuery);
   let html = `<div class="search-box">
-      <input type="search" id="q" placeholder="Tapez un mot : Bayes, rang, primitive…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Chercher une fiche" value="${esc(searchQuery)}">
+      <input type="search" id="q" placeholder="Tapez un mot : ${esc(M.exemples)}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Chercher une fiche" value="${esc(searchQuery)}">
     </div>
     <div id="results">${resultsHtml(results)}</div>
     <h2>Sommaire</h2>
@@ -1218,7 +1271,7 @@ function describeChange(oldCards, newCards) {
 
 async function checkUpdate() {
   try {
-    const remote = await fetch('data/cartes.json', { cache: 'no-store' }).then(r => {
+    const remote = await fetch(M.data + 'cartes.json', { cache: 'no-store' }).then(r => {
       if (!r.ok) throw new Error(r.status);
       return r.json();
     });
@@ -1252,14 +1305,16 @@ async function download(filename, text, type) {
 }
 
 function exportBackup() {
-  const data = { app: 'flashcards-formules-maths', exported: new Date().toISOString(), store };
-  download(`formules-maths-sauvegarde-${dayKey()}.json`, JSON.stringify(data), 'application/json');
+  const code = matiere || 'maths';
+  const data = { app: 'flashcards-formules-' + code, exported: new Date().toISOString(), store };
+  download(`formules-${code}-sauvegarde-${dayKey()}.json`, JSON.stringify(data), 'application/json');
 }
 
 async function importBackup(file) {
   try {
     const data = JSON.parse(await file.text());
-    if (data.app !== 'flashcards-formules-maths' || !data.store || typeof data.store.cards !== 'object') throw new Error('fichier non reconnu');
+    if (data.app === `flashcards-formules-${matiere === 'maths' ? 'physique' : 'maths'}`) throw new Error('sauvegarde d’une autre matière : changez de matière avant de la restaurer');
+    if (data.app !== 'flashcards-formules-' + (matiere || 'maths') || !data.store || typeof data.store.cards !== 'object') throw new Error('fichier non reconnu');
     if (!await askConfirm(`Restaurer la sauvegarde du ${data.exported.slice(0, 10)} ? Elle remplace la progression actuelle de cet appareil.`, 'Restaurer')) return;
     Object.assign(store, { cards: {}, log: [], days: {}, selection: [] }, data.store);
     store.settings = Object.assign({}, DEFAULT_SETTINGS, store.settings);
@@ -1340,6 +1395,12 @@ function renderPrivacy() {
 /* ---------- Démarrage ---------- */
 
 async function main() {
+  if (!MATIERES[matiere]) {
+    view = 'matiere';
+    render();
+    registerWorker();
+    return;
+  }
   try {
     await loadDeck();
   } catch (e) {
@@ -1350,6 +1411,10 @@ async function main() {
   updateBadge();
   flushReports();
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  registerWorker();
+}
+
+function registerWorker() {
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').then(reg => { swReg = reg; }).catch(() => {});
     // nouvelle version installée : on recharge, mais jamais au milieu d'une séance

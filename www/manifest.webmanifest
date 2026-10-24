@@ -1,7 +1,7 @@
 {
   "name": "Formules BCPST",
   "short_name": "Formules",
-  "description": "Théorèmes, définitions et formules de mathématiques du programme BCPST, en répétition espacée.",
+  "description": "Théorèmes, définitions et formules de mathématiques et de physique-chimie du programme BCPST, en répétition espacée.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",

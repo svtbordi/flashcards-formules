@@ -89,7 +89,7 @@ console.log('signalements envoyés :', reports.map(r => `${r.contexte} | ${r.typ
 // formules non rendues par KaTeX (erreurs affichées en rouge)
 const bad = await page.evaluate(async () => {
   const d = await fetch('data/cartes.json').then(r => r.json());
-  return d.cards.filter(c => (tex(c.recto) + tex(c.verso) + tex(c.q || '') + tex(c.ctx || '')).includes('katex-error')).map(c => c.id);
+  return d.cards.filter(c => (tex(c.recto) + tex(c.verso) + tex(c.q || '') + tex(c.ctx || '')).match(/katex-error|#cc0000/)).map(c => c.id);
 });
 const sw = await page.evaluate(async () => ((await navigator.serviceWorker.getRegistration()) ? 'sw ok' : 'pas de sw'));
 console.log('formules en erreur :', bad, sw, 'erreurs :', errors);
