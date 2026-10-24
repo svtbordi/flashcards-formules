@@ -38,7 +38,7 @@ CHAPITRES_MATHS = [
 ]
 # Physique-chimie : un chapitre par partie numérotée du programme ; C.1, C.2 et C.7 coupés selon leurs sous-parties
 CHAPITRES_PHYSIQUE = [
-    ('MI', 'BCPST1', 'MI – Mesures et incertitudes'),
+    ('AD', 'BCPST1', 'AD – Unités et analyse dimensionnelle'), ('MI', 'BCPST1', 'MI – Mesures et incertitudes'),
     ('E1', 'BCPST1', 'E1 – Descriptions microscopique et macroscopique d’un système'),
     ('E2', 'BCPST1', 'E2 – Bilans d’énergie (premier principe)'),
     ('S1', 'BCPST1', 'S1 – Propagation d’un signal physique'),
@@ -67,6 +67,7 @@ CHAPITRES_PHYSIQUE = [
     ('F-FOR-C', 'Formulaire', 'Formules : chimie'),
     ('F-FOR-T', 'Formulaire', 'Formules : transport'),
     ('F-USI', 'Formulaire', 'Unités du Système international'),
+    ('F-PRE', 'Formulaire', 'Préfixes du SI'),
     ('F-UUS', 'Formulaire', 'Unités usuelles et conversions'),
     ('F-CST', 'Formulaire', 'Constantes'),
     ('F-OGC', 'Formulaire', 'Ordres de grandeur à connaître'),
