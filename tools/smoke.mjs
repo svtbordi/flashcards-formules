@@ -27,7 +27,12 @@ console.log('révisions :', await text('#go-all'));
 
 // formulaire : QCM puis flashcards
 await page.click('#go-form');
+await page.waitForSelector('#f-all');
+await page.screenshot({ path: `${shots}/1b-sous-menu-formulaire.png` });
+console.log('sous-menu :', await text('.actions'));
+await page.click('[data-chap="F-TRIG"]');
 await page.waitForSelector('#qcm-go');
+console.log('ordre aléatoire :', await page.evaluate(() => session.queue.slice(0, 5).map(c => c.id).join(' ')));
 await page.click('#qcm-go');
 await page.screenshot({ path: `${shots}/2-qcm.png` });
 for (let i = 0; i < 10; i++) {
@@ -53,6 +58,7 @@ for (let i = 0; i < 12; i++) {
   if (!btn) break;
   await btn.click();
 }
+await page.click('#btn-back');
 await page.click('#btn-back');
 
 // fiches d'un chapitre de BCPST 2, sans échauffement

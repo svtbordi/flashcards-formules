@@ -49,6 +49,7 @@ await page.click('#btn-back');
 await page.click('#btn-back');
 
 await page.click('#go-form');
+await page.click('#f-all');
 await page.waitForSelector('#cards-go, #qcm-go');
 await page.click('#cards-go');
 await page.click('#reveal');

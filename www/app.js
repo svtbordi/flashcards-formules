@@ -282,9 +282,8 @@ function buildSession(selected, { ahead = false, label = '', reviews = false } =
   const free = !reviews && pool.length > 0 && pool.every(c => c.deck === 'formulaire');
   let queue;
   if (free) {
-    fresh.sort((a, b) => cardOrderKey(a) - cardOrderKey(b));
-    notDue.sort((a, b) => a.r - b.r);
-    queue = due.map(x => x.c).concat(fresh, notDue.map(x => x.c));
+    // tirage au hasard : les cartes à revoir d'abord, puis toutes les autres mélangées
+    queue = shuffle(due.map(x => x.c)).concat(shuffle(fresh.concat(notDue.map(x => x.c))));
   } else if (ahead) {
     notDue.sort((a, b) => a.r - b.r);
     queue = notDue.slice(0, store.settings.dailyGoal).map(x => x.c);
@@ -447,9 +446,9 @@ function render() {
     sw.innerHTML = Object.entries(MATIERES).map(([k, m]) => `<button type="button" data-matiere="${k}" aria-pressed="${k === matiere}" aria-label="${esc(m.nom)}"><span class="short">${k === 'physique' ? 'PC' : esc(m.court)}</span><span class="long">${esc(m.nom)}</span></button>`).join('');
     sw.querySelectorAll('button').forEach(b => { b.onclick = () => changerMatiere(b.dataset.matiere); });
   }
-  const titles = { home: APP_NAME, matiere: APP_NAME, choose: 'Choisir des chapitres', vus: 'Mes chapitres vus en cours', session: 'Entraînement', progress: 'Ma progression', settings: 'Réglages', privacy: 'Données et confidentialité', install: 'Installer l’application', search: 'Rechercher une fiche' };
+  const titles = { home: APP_NAME, matiere: APP_NAME, choose: 'Choisir des chapitres', vus: 'Mes chapitres vus en cours', session: 'Entraînement', progress: 'Ma progression', settings: 'Réglages', privacy: 'Données et confidentialité', install: 'Installer l’application', search: 'Rechercher une fiche', formulaire: 'Formulaire' };
   titleEl.textContent = titles[view] || APP_NAME;
-  ({ home: renderHome, matiere: renderMatiere, choose: renderChoose, vus: renderVus, session: renderSession, progress: renderProgress, settings: renderSettings, privacy: renderPrivacy, install: renderInstall, search: renderSearch })[view]();
+  ({ home: renderHome, matiere: renderMatiere, choose: renderChoose, vus: renderVus, session: renderSession, progress: renderProgress, settings: renderSettings, privacy: renderPrivacy, install: renderInstall, search: renderSearch, formulaire: renderFormulaire })[view]();
 }
 
 const formCards = () => deck.cards.filter(c => c.deck === 'formulaire');
@@ -504,7 +503,7 @@ function renderHome() {
   document.getElementById('go-started').onclick = () => startSession(started, 'Mes chapitres commencés');
   document.getElementById('go-choose').onclick = () => go('choose');
   const form = document.getElementById('go-form');
-  if (form) form.onclick = () => startSession(['@Formulaire'], 'Formulaire');
+  if (form) form.onclick = () => go('formulaire');
   for (const r of raccourcis()) document.getElementById(r.id).onclick = () => startSession(r.sel, r.label);
   const last = document.getElementById('go-last');
   if (last) last.onclick = () => startSession(store.selection, 'Dernière sélection');
@@ -513,6 +512,24 @@ function renderHome() {
   document.getElementById('go-install').onclick = () => go('install');
   const suggest = document.getElementById('go-suggest');
   if (suggest) suggest.onclick = openSuggestion;
+}
+
+// Sous-menu du formulaire : une rubrique (trigonométrie, primitives…) ou tout ; les cartes sont tirées au hasard.
+function renderFormulaire() {
+  const rubs = chapters.filter(c => c.group === 'Formulaire')
+    .map(ch => ({ ch, s: statsFor(deck.cards.filter(c => c.chap === ch.code)) })).filter(x => x.s.total);
+  const all = statsFor(formCards());
+  const info = s => `${plural(s.total, ...M.formUnite)}${s.due ? ` · ${s.due} à revoir` : ''}`;
+  app.innerHTML = `
+    <p class="muted small">Entraînement à volonté, sans limite. Les cartes arrivent dans un ordre aléatoire (celles à revoir d’abord).</p>
+    <div class="actions">
+      <button class="primary" id="f-all">Tout le formulaire <small>${info(all)}</small></button>
+      ${rubs.map(({ ch, s }) => `<button data-chap="${esc(ch.code)}">${esc(ch.title)} <small>${info(s)}</small></button>`).join('')}
+    </div>`;
+  document.getElementById('f-all').onclick = () => startSession(['@Formulaire'], 'Formulaire');
+  app.querySelectorAll('[data-chap]').forEach(b => {
+    b.onclick = () => startSession([b.dataset.chap], chapterTitle[b.dataset.chap]);
+  });
 }
 
 // Raccourcis d'entraînement propres à la matière (ordres de grandeur en physique-chimie), s'ils ont des cartes
