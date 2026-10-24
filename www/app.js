@@ -440,7 +440,14 @@ function render() {
   document.getElementById('btn-settings').hidden = firstLaunch;
   // pas de recherche pendant une séance : chercher la réponse avant de la donner annule l'effet du test
   document.getElementById('btn-search').hidden = view === 'session' || view === 'search' || firstLaunch;
-  const titles = { home: `${APP_NAME} · ${M.court}`, matiere: APP_NAME, choose: 'Choisir des chapitres', vus: 'Mes chapitres vus en cours', session: 'Entraînement', progress: 'Ma progression', settings: 'Réglages', privacy: 'Données et confidentialité', install: 'Installer l’application', search: 'Rechercher une fiche' };
+  // bascule de matière dans le bandeau : masquée pendant une séance (on ne quitte pas une séance par erreur)
+  const sw = document.getElementById('switch');
+  sw.hidden = firstLaunch || view === 'session';
+  if (!sw.hidden && !sw.firstChild) {
+    sw.innerHTML = Object.entries(MATIERES).map(([k, m]) => `<button type="button" data-matiere="${k}" aria-pressed="${k === matiere}">${esc(m.nom)}</button>`).join('');
+    sw.querySelectorAll('button').forEach(b => { b.onclick = () => changerMatiere(b.dataset.matiere); });
+  }
+  const titles = { home: APP_NAME, matiere: APP_NAME, choose: 'Choisir des chapitres', vus: 'Mes chapitres vus en cours', session: 'Entraînement', progress: 'Ma progression', settings: 'Réglages', privacy: 'Données et confidentialité', install: 'Installer l’application', search: 'Rechercher une fiche' };
   titleEl.textContent = titles[view] || APP_NAME;
   ({ home: renderHome, matiere: renderMatiere, choose: renderChoose, vus: renderVus, session: renderSession, progress: renderProgress, settings: renderSettings, privacy: renderPrivacy, install: renderInstall, search: renderSearch })[view]();
 }
@@ -526,12 +533,14 @@ function renderMatiere() {
     </section>
     <div class="actions">${Object.entries(MATIERES).map(([k, m]) => `<button class="${k === matiere ? 'primary' : ''}" data-matiere="${k}">${esc(m.nom)}${k === matiere ? ' <small>matière actuelle</small>' : ''}</button>`).join('')}</div>`;
   app.querySelectorAll('[data-matiere]').forEach(b => {
-    b.onclick = () => {
-      if (b.dataset.matiere === matiere) return back();
-      try { localStorage.setItem(MATIERE_KEY, b.dataset.matiere); } catch (e) { return toast('Impossible d’enregistrer : stockage bloqué.'); }
-      location.reload();
-    };
+    b.onclick = () => (b.dataset.matiere === matiere ? back() : changerMatiere(b.dataset.matiere));
   });
+}
+
+function changerMatiere(k) {
+  if (k === matiere) return;
+  try { localStorage.setItem(MATIERE_KEY, k); } catch (e) { return toast('Impossible d’enregistrer : stockage bloqué.'); }
+  location.reload();
 }
 
 // Liste de chapitres à cocher, groupés (BCPST 1, BCPST 2, autres, formulaire) ; un groupe se coche en entier.

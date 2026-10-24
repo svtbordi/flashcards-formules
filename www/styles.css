@@ -74,6 +74,18 @@ body {
   background: var(--accent); color: var(--accent-text);
 }
 .top h1 { flex: 1; font-size: 18px; margin: 0; font-weight: 600; }
+.top { flex-wrap: wrap; }
+.top h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.switch {
+  flex-basis: 100%; display: flex; gap: 4px; padding: 3px;
+  border: 1px solid currentColor; border-radius: 10px;
+}
+.switch button {
+  flex: 1; min-height: 34px; border: 0; border-radius: 7px; cursor: pointer;
+  background: transparent; color: inherit; font: inherit; font-size: 15px; font-weight: 500; opacity: .8;
+}
+.switch button[aria-pressed="true"] { background: var(--accent-text); color: var(--accent); font-weight: 700; opacity: 1; }
+.switch button:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .icon-btn {
   background: none; border: 0; color: inherit; font-size: 22px;
   width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
