@@ -60,6 +60,11 @@
 "title": "C3 – Structure et propriétés de la matière"
 },
 {
+"code": "C4",
+"group": "BCPST1",
+"title": "C4 – Cinétique chimique 1"
+},
+{
 "code": "C5",
 "group": "BCPST1",
 "title": "C5 – Chimie organique 1"
@@ -73,6 +78,11 @@
 "code": "E8",
 "group": "BCPST2",
 "title": "E8 – Binaires solide-liquide"
+},
+{
+"code": "C6",
+"group": "BCPST2",
+"title": "C6 – Cinétique chimique 2"
 },
 {
 "code": "F-FOR-E",
