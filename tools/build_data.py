@@ -39,6 +39,7 @@ CHAPITRES_MATHS = [
 # Physique-chimie : un chapitre par partie numérotée du programme ; C.1, C.2 et C.7 coupés selon leurs sous-parties
 CHAPITRES_PHYSIQUE = [
     ('AD', 'BCPST1', 'AD – Unités et analyse dimensionnelle'), ('MI', 'BCPST1', 'MI – Mesures et incertitudes'),
+    ('DT', 'BCPST1', 'DT – Dosages et titrages'),
     ('E1', 'BCPST1', 'E1 – Descriptions microscopique et macroscopique d’un système'),
     ('E2', 'BCPST1', 'E2 – Bilans d’énergie (premier principe)'),
     ('S1', 'BCPST1', 'S1 – Propagation d’un signal physique'),

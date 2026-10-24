@@ -5,9 +5,19 @@
 "title": "AD – Unités et analyse dimensionnelle"
 },
 {
+"code": "DT",
+"group": "BCPST1",
+"title": "DT – Dosages et titrages"
+},
+{
 "code": "S1",
 "group": "BCPST1",
 "title": "S1 – Propagation d’un signal physique"
+},
+{
+"code": "C2b",
+"group": "BCPST1",
+"title": "C2b – Acide-base"
 },
 {
 "code": "F-FOR-S",
