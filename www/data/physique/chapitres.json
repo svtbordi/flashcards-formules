@@ -20,9 +20,19 @@
 "title": "C2b – Acide-base"
 },
 {
+"code": "C2c",
+"group": "BCPST1",
+"title": "C2c – Oxydoréduction"
+},
+{
 "code": "F-FOR-S",
 "group": "Formulaire",
 "title": "Formules : ondes et signaux"
+},
+{
+"code": "F-FOR-C",
+"group": "Formulaire",
+"title": "Formules : chimie"
 },
 {
 "code": "F-USI",
