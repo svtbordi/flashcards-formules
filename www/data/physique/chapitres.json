@@ -10,6 +10,16 @@
 "title": "DT – Dosages et titrages"
 },
 {
+"code": "E1",
+"group": "BCPST1",
+"title": "E1 – Descriptions microscopique et macroscopique d’un système"
+},
+{
+"code": "E2",
+"group": "BCPST1",
+"title": "E2 – Bilans d’énergie (premier principe)"
+},
+{
 "code": "S1",
 "group": "BCPST1",
 "title": "S1 – Propagation d’un signal physique"
@@ -40,9 +50,29 @@
 "title": "C2c – Oxydoréduction"
 },
 {
+"code": "C3",
+"group": "BCPST1",
+"title": "C3 – Structure et propriétés de la matière"
+},
+{
 "code": "C5",
 "group": "BCPST1",
 "title": "C5 – Chimie organique 1"
+},
+{
+"code": "E7",
+"group": "BCPST2",
+"title": "E7 – Thermochimie"
+},
+{
+"code": "E8",
+"group": "BCPST2",
+"title": "E8 – Binaires solide-liquide"
+},
+{
+"code": "F-FOR-E",
+"group": "Formulaire",
+"title": "Formules : énergie, thermodynamique"
 },
 {
 "code": "F-FOR-S",
