@@ -15,6 +15,16 @@
 "title": "S1 – Propagation d’un signal physique"
 },
 {
+"code": "C1a",
+"group": "BCPST1",
+"title": "C1a – Atomes"
+},
+{
+"code": "C1b",
+"group": "BCPST1",
+"title": "C1b – Molécules et ions"
+},
+{
 "code": "C2b",
 "group": "BCPST1",
 "title": "C2b – Acide-base"
