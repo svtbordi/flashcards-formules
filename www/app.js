@@ -493,7 +493,6 @@ function renderHome() {
       <button id="go-started" ${startedStats ? '' : 'disabled'}>Mes chapitres commencés${startedStats ? ` <small>(${startedStats.due} à revoir)</small>` : ''}</button>
     </div>
     <div class="actions secondary">
-      <button id="go-matiere">Matière : ${esc(M.nom)} <small>changer de matière</small></button>
       <button id="go-progress">Ma progression</button>
       <button id="go-search">Rechercher une fiche</button>
       <button id="go-install">Installer l’application et les rappels</button>
@@ -507,7 +506,6 @@ function renderHome() {
   const form = document.getElementById('go-form');
   if (form) form.onclick = () => startSession(['@Formulaire'], 'Formulaire');
   for (const r of raccourcis()) document.getElementById(r.id).onclick = () => startSession(r.sel, r.label);
-  document.getElementById('go-matiere').onclick = () => go('matiere');
   const last = document.getElementById('go-last');
   if (last) last.onclick = () => startSession(store.selection, 'Dernière sélection');
   document.getElementById('go-progress').onclick = () => go('progress');
@@ -522,14 +520,14 @@ function raccourcis() {
   return M.raccourcis.map(r => Object.assign({ n: deck.cards.filter(c => matchesSelection(c, r.sel)).length }, r)).filter(r => r.n);
 }
 
-// Choix de la matière : au premier lancement, puis depuis l'accueil. Chaque matière garde sa propre progression ;
+// Choix de la matière : au premier lancement, puis par la bascule du bandeau. Chaque matière garde sa propre progression ;
 // changer de matière recharge l'application sur le jeu de cartes choisi.
 function renderMatiere() {
   const first = !MATIERES[matiere];
   app.innerHTML = `
     <section class="card hero">
       <p class="big">${first ? 'Bienvenue' : 'Changer de matière'}</p>
-      <p>${first ? 'Choisissez la matière à réviser. Vous pourrez en changer à tout moment depuis l’accueil.' : 'Votre progression est conservée séparément dans chaque matière.'}</p>
+      <p>${first ? 'Choisissez la matière à réviser. Vous pourrez en changer à tout moment depuis le bandeau en haut de l’écran.' : 'Votre progression est conservée séparément dans chaque matière.'}</p>
     </section>
     <div class="actions">${Object.entries(MATIERES).map(([k, m]) => `<button class="${k === matiere ? 'primary' : ''}" data-matiere="${k}">${esc(m.nom)}${k === matiere ? ' <small>matière actuelle</small>' : ''}</button>`).join('')}</div>`;
   app.querySelectorAll('[data-matiere]').forEach(b => {

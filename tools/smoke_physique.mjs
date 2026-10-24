@@ -72,9 +72,8 @@ const bad = await page.evaluate(async () => {
 });
 
 // retour en mathématiques : progression séparée
-await page.click('#go-matiere');
 await page.screenshot({ path: `${shots}/p8-changer-matiere.png` });
-await page.click('[data-matiere="maths"]');
+await page.click('#switch [data-matiere="maths"]');
 await page.waitForSelector('#go-all');
 console.log('titre :', await text('#title'), '|', await text('.muted.small:last-child'));
 const keys = await page.evaluate(() => Object.keys(localStorage));
