@@ -444,7 +444,7 @@ function render() {
   const sw = document.getElementById('switch');
   sw.hidden = firstLaunch || view === 'session';
   if (!sw.hidden && !sw.firstChild) {
-    sw.innerHTML = Object.entries(MATIERES).map(([k, m]) => `<button type="button" data-matiere="${k}" aria-pressed="${k === matiere}">${esc(m.nom)}</button>`).join('');
+    sw.innerHTML = Object.entries(MATIERES).map(([k, m]) => `<button type="button" data-matiere="${k}" aria-pressed="${k === matiere}" aria-label="${esc(m.nom)}"><span class="short">${k === 'physique' ? 'PC' : esc(m.court)}</span><span class="long">${esc(m.nom)}</span></button>`).join('');
     sw.querySelectorAll('button').forEach(b => { b.onclick = () => changerMatiere(b.dataset.matiere); });
   }
   const titles = { home: APP_NAME, matiere: APP_NAME, choose: 'Choisir des chapitres', vus: 'Mes chapitres vus en cours', session: 'Entraînement', progress: 'Ma progression', settings: 'Réglages', privacy: 'Données et confidentialité', install: 'Installer l’application', search: 'Rechercher une fiche' };
