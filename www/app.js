@@ -512,7 +512,7 @@ function renderHome() {
     <div class="actions secondary">
       <button id="go-progress">Ma progression</button>
       <button id="go-search">Rechercher une fiche</button>
-      <button id="go-install">Installer l’application et les rappels</button>
+      ${installLabel() ? `<button id="go-install">${installLabel()}</button>` : ''}
       ${canReport() ? '<button id="go-suggest">Suggérer une amélioration ou faire une demande</button>' : ''}
     </div>
     <p class="muted small">${deck.cards.length - nForm} fiches et ${nForm} formules · version ${esc(deck.version)}</p>`;
@@ -529,7 +529,8 @@ function renderHome() {
   if (last) last.onclick = () => startSession(store.selection, 'Dernière sélection');
   document.getElementById('go-progress').onclick = () => go('progress');
   document.getElementById('go-search').onclick = () => go('search');
-  document.getElementById('go-install').onclick = () => go('install');
+  const inst = document.getElementById('go-install');
+  if (inst) inst.onclick = () => go('install');
   const suggest = document.getElementById('go-suggest');
   if (suggest) suggest.onclick = openSuggestion;
 }
@@ -1417,6 +1418,7 @@ function renderSettings() {
       <label class="file">Restaurer une sauvegarde<input type="file" id="import" accept=".json,application/json"></label>
       <button class="danger" id="reset">Effacer toute ma progression</button>
     </section>
+    <button class="link" id="install-page">Installer l’application, rappel quotidien</button>
     <button class="link" id="privacy">Données et confidentialité</button>`;
   const num = (id, min, max) => {
     const el = document.getElementById(id);
@@ -1447,6 +1449,7 @@ function renderSettings() {
     toast('Progression effacée.');
   };
   document.getElementById('privacy').onclick = () => go('privacy');
+  document.getElementById('install-page').onclick = () => go('install');
 }
 
 function describeChange(oldCards, newCards) {
@@ -1543,8 +1546,26 @@ function icsReminder(time) {
     'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
 }
 
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
+
+// Rappel ajouté sur cet appareil : une seule application pour les deux matières, donc une clé commune, hors progression.
+// L'application ne peut pas lire le calendrier : « ajouté » veut dire que l'élève a téléchargé le fichier du rappel,
+// ou a indiqué en avoir déjà un.
+const REMINDER_KEY = 'fc-formules-rappel-v1';
+const reminderAdded = () => { try { return !!localStorage.getItem(REMINDER_KEY); } catch (e) { return false; } };
+function markReminder() {
+  try { localStorage.setItem(REMINDER_KEY, new Date().toISOString()); } catch (e) { /* stockage bloqué */ }
+}
+
+// Bouton de l'accueil : disparaît quand l'application est installée (ouverte par son icône) et que le rappel a été
+// ajouté. La page reste accessible depuis les réglages.
+function installLabel() {
+  if (!isStandalone()) return reminderAdded() ? 'Installer l’application' : 'Installer l’application et les rappels';
+  return reminderAdded() ? '' : 'Ajouter le rappel quotidien';
+}
+
 function renderInstall() {
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const standalone = isStandalone();
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
   app.innerHTML = `
     <section class="card">
@@ -1562,11 +1583,15 @@ function renderInstall() {
       <label>Heure du rappel <input type="time" id="rtime" value="${store.settings.reminderTime}"></label>
       <button id="ics">Ajouter le rappel au calendrier</button>
       <p class="muted small">Le fichier téléchargé s’ouvre avec l’application Calendrier. Pour arrêter le rappel, supprimez l’événement dans votre calendrier.</p>
+      ${reminderAdded() ? '<p class="muted small">Rappel déjà ajouté sur cet appareil : inutile de recommencer, sauf pour changer d’heure (supprimez alors l’ancien).</p>'
+        : '<button class="link" id="ics-done">J’ai déjà un rappel dans mon calendrier</button>'}
     </section>`;
   const i = document.getElementById('install');
   if (i) i.onclick = async () => { installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; render(); };
   document.getElementById('rtime').onchange = e => { store.settings.reminderTime = e.target.value || '18:00'; persist(); };
-  document.getElementById('ics').onclick = () => download('rappel-formules-bcpst.ics', icsReminder(store.settings.reminderTime), 'text/calendar');
+  document.getElementById('ics').onclick = () => { download('rappel-formules-bcpst.ics', icsReminder(store.settings.reminderTime), 'text/calendar'); markReminder(); render(); };
+  const done = document.getElementById('ics-done');
+  if (done) done.onclick = () => { markReminder(); toast('C’est noté.'); render(); };
 }
 
 function renderPrivacy() {
