@@ -169,8 +169,24 @@ function plain(s) {
 
 // Une sélection contient des codes de chapitres (« A3 », « F-TRIG ») ou de groupes (« @Formulaire »)
 function matchesSelection(card, selected) {
+  if (selected.includes(PICKED) && pickedSet.has(card.id)) return true;
   return selected.includes(card.chap) || selected.includes('@' + chapterGroup[card.chap]);
 }
+
+// PICKED dans une sélection : les cartes cochées par l'élève dans la loupe. Cocher ajoute des cartes à travailler,
+// décocher ne retire jamais une carte commencée des révisions espacées.
+const PICKED = '@cochees';
+GROUP_TITLE.cochees = 'Mes cartes cochées';
+let pickedSet = new Set(Array.isArray(store.picked) ? store.picked : []);
+
+function setPicked(ids, on) {
+  for (const id of ids) on ? pickedSet.add(id) : pickedSet.delete(id);
+  store.picked = [...pickedSet];
+  persist();
+}
+
+// seulement les cartes encore présentes dans le paquet
+const pickedCards = () => deck.cards.filter(c => pickedSet.has(c.id));
 
 const cardOrderKey = c => (chapterOrder[c.chap] ?? 9999) * 1e4 + deck.index.get(c.id);
 
@@ -278,8 +294,9 @@ function buildSession(selected, { ahead = false, label = '', reviews = false } =
     else notDue.push({ c, r: retrievability(st, now) });
   }
   due.sort((a, b) => a.r - b.r);
-  // Formulaire seul : entraînement à volonté, sans limite de nouvelles cartes ni attente du calendrier
-  const free = !reviews && pool.length > 0 && pool.every(c => c.deck === 'formulaire');
+  // Formulaire seul ou cartes cochées : entraînement à volonté, sans limite de nouvelles cartes ni attente du calendrier
+  // Cartes cochées dans la loupe : même régime, l'élève les a choisies une à une
+  const free = !reviews && pool.length > 0 && (pool.every(c => c.deck === 'formulaire') || selected.length === 1 && selected[0] === PICKED);
   let queue;
   if (free) {
     // tirage au hasard : les cartes à revoir d'abord, puis toutes les autres mélangées
@@ -446,7 +463,7 @@ function render() {
     sw.innerHTML = Object.entries(MATIERES).map(([k, m]) => `<button type="button" data-matiere="${k}" aria-pressed="${k === matiere}" aria-label="${esc(m.nom)}"><span class="short">${k === 'physique' ? 'PC' : esc(m.court)}</span><span class="long">${esc(m.nom)}</span></button>`).join('');
     sw.querySelectorAll('button').forEach(b => { b.onclick = () => changerMatiere(b.dataset.matiere); });
   }
-  const titles = { home: APP_NAME, matiere: APP_NAME, choose: 'Choisir des chapitres', vus: 'Mes chapitres vus en cours', session: 'Entraînement', progress: 'Ma progression', settings: 'Réglages', privacy: 'Données et confidentialité', install: 'Installer l’application', search: 'Rechercher une fiche', formulaire: 'Formulaire' };
+  const titles = { home: APP_NAME, matiere: APP_NAME, choose: 'Choisir des chapitres', vus: 'Mes chapitres vus en cours', session: 'Entraînement', progress: 'Ma progression', settings: 'Réglages', privacy: 'Données et confidentialité', install: 'Installer l’application', search: 'Fiches et formulaires', formulaire: 'Formulaire' };
   titleEl.textContent = titles[view] || APP_NAME;
   ({ home: renderHome, matiere: renderMatiere, choose: renderChoose, vus: renderVus, session: renderSession, progress: renderProgress, settings: renderSettings, privacy: renderPrivacy, install: renderInstall, search: renderSearch, formulaire: renderFormulaire })[view]();
 }
@@ -487,6 +504,7 @@ function renderHome() {
     <div class="actions">
       <button id="go-choose">Choisir un ou plusieurs chapitres</button>
       ${nForm ? `<button id="go-form">Formulaire <small>${plural(nForm, ...M.formUnite)} : ${M.formDesc} · à volonté, sans limite</small></button>` : ''}
+      ${pickedCards().length ? `<button id="go-picked">Mes cartes cochées <small>${plural(pickedCards().length, 'carte cochée', 'cartes cochées')} dans la loupe · à volonté</small></button>` : ''}
       ${raccourcis().map(r => `<button id="${r.id}">${esc(r.label)} <small>${plural(r.n, 'carte', 'cartes')} : ${esc(r.desc)}</small></button>`).join('')}
       ${store.selection.length ? `<button id="go-last">Reprendre ma dernière sélection <small>(${esc(selectionLabel(store.selection).slice(0, 60))})</small></button>` : ''}
       <button id="go-started" ${startedStats ? '' : 'disabled'}>Mes chapitres commencés${startedStats ? ` <small>(${startedStats.due} à revoir)</small>` : ''}</button>
@@ -504,6 +522,8 @@ function renderHome() {
   document.getElementById('go-choose').onclick = () => go('choose');
   const form = document.getElementById('go-form');
   if (form) form.onclick = () => go('formulaire');
+  const gp = document.getElementById('go-picked');
+  if (gp) gp.onclick = () => startSession([PICKED], 'Mes cartes cochées');
   for (const r of raccourcis()) document.getElementById(r.id).onclick = () => startSession(r.sel, r.label);
   const last = document.getElementById('go-last');
   if (last) last.onclick = () => startSession(store.selection, 'Dernière sélection');
@@ -902,8 +922,8 @@ function renderSession() {
       ${s.revealed && canReport() ? reportButton() : ''}
       ${cardTags(c, st)}
       ${frontHtml(c)}
-      ${s.revealed ? `<div class="def">${tex(c.verso)}</div>${c.orange ? ORANGE_NOTE : ''}`
-        : '<p class="hint muted">Répondez de tête (ou à l’écrit), puis retournez la carte.</p>'}
+      ${s.revealed ? `${sketchHtml(s, c)}<div class="def">${tex(c.verso)}</div>${c.orange ? ORANGE_NOTE : ''}`
+        : `<p class="hint muted">Répondez de tête (ou à l’écrit), puis retournez la carte.</p>${sketchHtml(s, c)}`}
     </article>
     ${s.revealed ? ratingButtons() : '<button class="primary reveal" id="reveal">Voir la réponse <small>Espace</small></button>'}
     ${s.undo ? '<button class="link undo" id="undo">Annuler la dernière réponse</button>' : ''}`;
@@ -914,6 +934,83 @@ function renderSession() {
   if (u) u.onclick = undoLast;
   const rep = app.querySelector('.report-btn');
   if (rep) rep.onclick = () => openReport(c, form ? 'formulaire' : 'flashcard');
+  bindSketch(s, c);
+}
+
+/* ---------- Zone d'écriture ----------
+   L'élève écrit sa réponse au doigt, au stylet ou à la souris ; au retournement, son brouillon reste affiché au-dessus
+   de la réponse et c'est lui qui compare, puis s'évalue. Rien n'est reconnu, enregistré ni envoyé. */
+
+function sketchOf(s, c) {
+  if (!s.sketch || s.sketch.id !== c.id) s.sketch = { id: c.id, strokes: [] };
+  return s.sketch;
+}
+
+function sketchHtml(s, c) {
+  const on = !!store.settings.draw;
+  const sk = sketchOf(s, c);
+  if (s.revealed) return on && sk.strokes.length ? '<p class="muted small sketch-label">Votre réponse :</p><canvas class="sketch done" aria-label="Votre réponse écrite"></canvas>' : '';
+  return `<button class="link write-toggle" id="draw-toggle">${on ? 'Masquer la zone d’écriture' : '✎ Écrire ma réponse (doigt, stylet ou souris)'}</button>
+    ${on ? `<canvas class="sketch" aria-label="Zone d’écriture"></canvas>
+      <div class="sketch-tools"><button class="link" id="draw-undo">Annuler le dernier trait</button><button class="link" id="draw-clear">Tout effacer</button></div>` : ''}`;
+}
+
+function bindSketch(s, c) {
+  const t = document.getElementById('draw-toggle');
+  if (t) t.onclick = () => { store.settings.draw = !store.settings.draw; persist(); render(); };
+  const cv = app.querySelector('canvas.sketch');
+  if (!cv) return;
+  const sk = sketchOf(s, c);
+  const ink = getComputedStyle(document.body).color;
+  const ctx = cv.getContext('2d');
+  const size = () => {
+    const w = cv.clientWidth;
+    const h = cv.clientHeight;
+    const r = window.devicePixelRatio || 1;
+    cv.width = Math.round(w * r);
+    cv.height = Math.round(h * r);
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 2.5;
+    return [w, h];
+  };
+  let [w, h] = size();
+  // traits gardés en coordonnées relatives : le brouillon se redessine à l'identique au retournement de la carte
+  const draw = st => {
+    ctx.beginPath();
+    st.forEach(([x, y], i) => (i ? ctx.lineTo(x * w, y * h) : ctx.moveTo(x * w, y * h)));
+    if (st.length === 1) ctx.lineTo(st[0][0] * w + 0.1, st[0][1] * h);
+    ctx.stroke();
+  };
+  const redraw = () => { ctx.clearRect(0, 0, w, h); sk.strokes.forEach(draw); };
+  redraw();
+  if (cv.classList.contains('done')) return;
+  let cur = null;
+  const pt = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / w, (e.clientY - b.top) / h]; };
+  cv.onpointerdown = e => { e.preventDefault(); cv.setPointerCapture(e.pointerId); cur = [pt(e)]; sk.strokes.push(cur); draw(cur); };
+  cv.onpointermove = e => {
+    if (!cur) return;
+    const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
+    for (const ev of evs.length ? evs : [e]) {
+      const [x0, y0] = cur[cur.length - 1];
+      const p = pt(ev);
+      cur.push(p);
+      ctx.beginPath();
+      ctx.moveTo(x0 * w, y0 * h);
+      ctx.lineTo(p[0] * w, p[1] * h);
+      ctx.stroke();
+    }
+  };
+  cv.onpointerup = cv.onpointercancel = () => { cur = null; };
+  document.getElementById('draw-undo').onclick = () => { sk.strokes.pop(); redraw(); };
+  document.getElementById('draw-clear').onclick = () => { sk.strokes = []; redraw(); };
+  window.addEventListener('resize', function onResize() {
+    if (!cv.isConnected) return window.removeEventListener('resize', onResize);
+    [w, h] = size();
+    redraw();
+  });
 }
 
 document.addEventListener('keydown', e => {
@@ -1156,45 +1253,117 @@ function showCard(card) {
     <div class="def">${tex(card.verso)}</div>
     ${card.orange ? ORANGE_NOTE : ''}
     <p class="muted small">${esc(GROUP_TITLE[chapterGroup[card.chap]] || '')} · ${esc(chapterTitle[card.chap] || '')}</p>
+    <label class="row pick-def"><input type="checkbox" id="def-pick" ${pickedSet.has(card.id) ? 'checked' : ''}> Ajouter à mes cartes à réviser</label>
     ${canReport() ? reportButton() : ''}
     <button class="primary wide" id="def-close">Fermer</button></div>`;
   document.body.appendChild(box);
-  const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
+  const close = () => { box.remove(); document.removeEventListener('keydown', onKey); if (view === 'search') render(); };
   const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.report-box')) close(); };
   document.addEventListener('keydown', onKey);
   box.addEventListener('click', e => { if (e.target === box) close(); });
   box.querySelector('#def-close').onclick = close;
+  box.querySelector('#def-pick').onchange = e => setPicked([card.id], e.target.checked);
   box.querySelector('#def-close').focus();
   const rep = box.querySelector('.report-btn');
   if (rep) rep.onclick = () => openReport(card, 'recherche');
 }
 
+let searchMode = 'chap'; // sommaire par chapitre, ou index alphabétique des fiches ('az')
+let searchLetter = '';
+let searchOpenGroups = new Set(['BCPST1']);
+
+// Initiale de l'intitulé d'une fiche, sans accent ni formule ; les formules du formulaire ne sont pas indexées.
+function letterOf(c) {
+  const l = normText(plain(c.recto)).replace(/^[^a-z0-9]+/, '').charAt(0).toUpperCase();
+  return /[A-Z]/.test(l) ? l : '#';
+}
+
+function listCards(key) {
+  if (key.startsWith('L:')) return deck.cards.filter(c => c.deck !== 'formulaire' && letterOf(c) === key.slice(2))
+    .sort((a, b) => plain(a.recto).localeCompare(plain(b.recto), 'fr', { sensitivity: 'base' }));
+  return deck.cards.filter(c => c.chap === key);
+}
+
+function cardList(key) {
+  const cards = listCards(key);
+  const az = key.startsWith('L:'); // index alphabétique : rappeler le chapitre de chaque fiche, pas de « Tout cocher »
+  const n = cards.filter(c => pickedSet.has(c.id)).length;
+  return `<div class="terms">
+    <p class="pick-all small">${n ? `${n} cochée${n > 1 ? 's' : ''} sur ${cards.length} · ` : ''}${az ? (n ? `<button class="link" data-pickall="${key}" data-on="0">Décocher ces ${n}</button>` : '') : `<button class="link" data-pickall="${key}" data-on="${n < cards.length ? 1 : 0}">${n < cards.length ? 'Tout cocher' : 'Tout décocher'}</button>`}</p>
+    <ul>${cards.map(c => `<li class="pick-row"><input type="checkbox" class="pick" data-id="${esc(c.id)}" aria-label="Réviser « ${esc(plain(c.recto))} »" ${pickedSet.has(c.id) ? 'checked' : ''}><button class="term-link" data-id="${esc(c.id)}">${tex(c.recto)}${az ? ` <small class="muted">${esc(chapterTitle[c.chap] || '')}</small>` : ''}</button></li>`).join('')}</ul></div>`;
+}
+
+function pickedBanner() {
+  const n = pickedCards().length;
+  return `<div class="card pick-banner">
+    <p class="small">Cochez les fiches ou les formules que vous voulez travailler en plus : elles s’ajoutent à vos révisions et n’en retirent aucune.</p>
+    ${n ? `<p><b>${plural(n, 'carte cochée', 'cartes cochées')}</b></p>
+      <button class="primary" id="lex-picked">Réviser mes cartes cochées</button>
+      <button class="link" id="lex-unpick">Tout décocher</button>` : ''}
+  </div>`;
+}
+
 function renderSearch() {
   const results = searchCards(searchQuery);
-  let html = `<div class="search-box">
+  let html = `${pickedBanner()}<div class="search-box">
       <input type="search" id="q" placeholder="Tapez un mot : ${esc(M.exemples)}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Chercher une fiche" value="${esc(searchQuery)}">
     </div>
     <div id="results">${resultsHtml(results)}</div>
-    <h2>Sommaire</h2>
-    <p class="muted small">Touchez un chapitre pour voir ses fiches dans l’ordre du programme.</p>`;
-  for (const g of GROUPS) {
-    const chs = chapters.filter(c => c.group === g);
-    if (!chs.length) continue;
-    html += `<h2 class="section">${esc(GROUP_TITLE[g])}</h2>`;
-    for (const ch of chs) {
-      const cards = deck.cards.filter(c => c.chap === ch.code);
-      html += `<div class="chap"><button class="lex-item ${searchShown === ch.code ? 'open' : ''}" data-show="${ch.code}">
-        <span class="chap-name">${esc(ch.title)}</span><span class="count">${cards.length}</span></button>
-        ${searchShown === ch.code ? `<ul class="terms">${cards.map(c => `<li><button class="term-link" data-id="${esc(c.id)}">${tex(c.recto)}</button></li>`).join('')}</ul>` : ''}</div>`;
+    <div class="lex-tabs" role="tablist">
+      <button role="tab" data-mode="chap" aria-selected="${searchMode === 'chap'}">Par chapitre</button>
+      <button role="tab" data-mode="az" aria-selected="${searchMode === 'az'}">De A à Z</button>
+    </div>`;
+  if (searchMode === 'az') {
+    const counts = {};
+    deck.cards.forEach(c => { if (c.deck !== 'formulaire') { const l = letterOf(c); counts[l] = (counts[l] || 0) + 1; } });
+    const letters = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '#'];
+    html += `<p class="muted small">Touchez une lettre pour voir les fiches dont l’intitulé commence par elle, tous chapitres confondus (le formulaire est dans « Par chapitre »).</p>
+      <div class="letters">${letters.map(l => `<button data-letter="${l}" ${counts[l] ? '' : 'disabled'} aria-pressed="${searchLetter === l}">${l}</button>`).join('')}</div>
+      ${searchLetter && counts[searchLetter] ? `<h2>${searchLetter === '#' ? 'Autres' : searchLetter} <span class="muted small">${plural(counts[searchLetter], 'fiche', 'fiches')}</span></h2>${cardList('L:' + searchLetter)}` : ''}`;
+  } else {
+    html += '<p class="muted small">Touchez une année ou le formulaire, puis un chapitre pour voir ses cartes dans l’ordre du programme. Cochez celles à réviser.</p>';
+    for (const g of GROUPS) {
+      const chs = chapters.filter(c => c.group === g);
+      if (!chs.length) continue;
+      const open = searchOpenGroups.has(g);
+      const total = deck.cards.filter(c => chapterGroup[c.chap] === g).length;
+      html += `<div class="chap"><button class="lex-item" data-group="${g}" aria-expanded="${open}">
+        <span class="chap-name"><b>${esc(GROUP_TITLE[g])}</b></span><span class="count">${total} ${open ? '▾' : '▸'}</span></button>
+        ${open ? `<div class="subs">${chs.map(ch => {
+          const cards = deck.cards.filter(c => c.chap === ch.code);
+          const n = cards.filter(c => pickedSet.has(c.id)).length;
+          return `<button class="lex-item ${searchShown === ch.code ? 'open' : ''}" data-show="${ch.code}">
+            <span class="chap-name">${esc(ch.title)}</span><span class="count">${n ? `<em>${n}</em> / ` : ''}${cards.length}</span></button>
+            ${searchShown === ch.code ? cardList(ch.code) : ''}`;
+        }).join('')}</div>` : ''}</div>`;
     }
   }
   app.innerHTML = html;
   const byId = new Map(deck.cards.map(c => [c.id, c]));
-  const bindLinks = root => root.querySelectorAll('.term-link').forEach(b => { b.onclick = () => showCard(byId.get(b.dataset.id)); });
+  const bindLinks = root => {
+    root.querySelectorAll('.term-link').forEach(b => { b.onclick = () => showCard(byId.get(b.dataset.id)); });
+    root.querySelectorAll('input.pick').forEach(cb => { cb.onchange = () => { setPicked([cb.dataset.id], cb.checked); render(); }; });
+  };
   bindLinks(app);
+  app.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => { searchMode = b.dataset.mode; render(); }; });
+  app.querySelectorAll('[data-letter]').forEach(b => { b.onclick = () => { searchLetter = searchLetter === b.dataset.letter ? '' : b.dataset.letter; render(); }; });
+  app.querySelectorAll('[data-group]').forEach(b => {
+    b.onclick = () => { const g = b.dataset.group; searchOpenGroups.has(g) ? searchOpenGroups.delete(g) : searchOpenGroups.add(g); render(); };
+  });
   app.querySelectorAll('[data-show]').forEach(b => {
     b.onclick = () => { searchShown = searchShown === b.dataset.show ? '' : b.dataset.show; render(); };
   });
+  app.querySelectorAll('[data-pickall]').forEach(b => {
+    b.onclick = () => { setPicked(listCards(b.dataset.pickall).map(c => c.id), b.dataset.on === '1'); render(); };
+  });
+  const lp = document.getElementById('lex-picked');
+  if (lp) lp.onclick = () => startSession([PICKED], 'Mes cartes cochées');
+  const lu = document.getElementById('lex-unpick');
+  if (lu) lu.onclick = async () => {
+    if (!await askConfirm('Décocher toutes vos cartes ? Celles déjà travaillées restent dans vos révisions espacées.', 'Tout décocher')) return;
+    setPicked([...pickedSet], false);
+    render();
+  };
   const input = document.getElementById('q');
   input.oninput = () => {
     searchQuery = input.value;
@@ -1214,7 +1383,7 @@ function renderSearch() {
 function resultsHtml(results) {
   if (!searchQuery.trim()) return '';
   if (!results.length) return '<p class="muted">Aucune fiche trouvée.</p>';
-  return `<ul class="terms results">${results.map(c => `<li><button class="term-link" data-id="${esc(c.id)}">${tex(c.recto)} <small class="muted">${esc(chapterTitle[c.chap] || '')}</small></button></li>`).join('')}</ul>`;
+  return `<ul class="terms results">${results.map(c => `<li class="pick-row"><input type="checkbox" class="pick" data-id="${esc(c.id)}" aria-label="Réviser « ${esc(plain(c.recto))} »" ${pickedSet.has(c.id) ? 'checked' : ''}><button class="term-link" data-id="${esc(c.id)}">${tex(c.recto)} <small class="muted">${esc(chapterTitle[c.chap] || '')}</small></button></li>`).join('')}</ul>`;
 }
 
 /* ---------- Réglages, mise à jour, sauvegarde ---------- */
